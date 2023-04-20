@@ -73,6 +73,7 @@ class User(models.Model):
 	country = models.CharField(max_length=100, choices = ValidCountry.choices)
 	city = models.CharField(max_length=100, choices = ValidCity.choices)
 	role = models.CharField(max_length=50, choices = Role.choices)
+	favorites = models.ManyToManyField(Property)
 
 	class Meta:
 		db_table='user'
