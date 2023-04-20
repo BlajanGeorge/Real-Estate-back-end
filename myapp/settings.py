@@ -37,6 +37,10 @@ CORS_ALLOWED_ORIGINS = [
 
 AGENT_TOKEN = 'agentSecret'
 
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60)
+}
+
 INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',

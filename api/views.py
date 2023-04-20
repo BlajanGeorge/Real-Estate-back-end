@@ -82,7 +82,44 @@ def user_by_id(request, user_id):
 	user_profile = UserProfileDto(user.first_name, user.last_name, user.email, user.favorites)
 	return Response(UserProfileSerializer(user_profile).data)
 
+@api_view(['PATCH'])
+def user_by_id_profile(request, user_id):
+	if JWTAuthentication().authenticate(request, ['AGENT', 'CUSTOMER'], user_id) == False:
+		return Response(status=status.HTTP_401_UNAUTHORIZED)
 
+	user = User.objects.filter(id=user_id).first()
+	if user is None:
+		return Response(status=status.HTTP_404_NOT_FOUND)
 
+	user.last_name = request.data.get('last_name')
+	user.first_name = request.data.get('first_name')
+	user.save()
+
+	serializer = UserSerializer(user, many=False)
+	if serializer.is_valid:
+		return Response(serializer.data)
+	
+	return Response(status=HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['PATCH'])
+def user_by_id_password(request, user_id):
+	if JWTAuthentication().authenticate(request, ['AGENT', 'CUSTOMER'], user_id) == False:
+		return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+	user = User.objects.filter(id=user_id).first()
+	if user is None:
+		return Response(status=status.HTTP_404_NOT_FOUND)
+
+	if user.password != request.data.get('current_password'):
+		return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+	user.password = request.data.get('new_password')
+	user.save()
+
+	serializer = UserSerializer(user, many=False)
+	if serializer.is_valid:
+		return Response(serializer.data)
+	
+	return Response(status=HTTP_500_INTERNAL_SERVER_ERROR)
 
 

@@ -55,7 +55,7 @@ class Property(models.Model):
 		db_table='property'
 
 class PropertyPhoto(models.Model):
-	content = models.ImageField()
+	url = models.CharField(max_length=200, default=None)
 	property = models.ForeignKey(Property, on_delete=models.CASCADE, default=None)
 	class Meta:
 		db_table='property_photo'
