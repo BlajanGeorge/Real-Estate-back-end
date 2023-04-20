@@ -74,8 +74,11 @@ def login(request):
 
 @api_view(['GET'])
 def user_by_id(request, user_id):
-	print(user_id)
-	return Response()
+	user = User.objects.filter(id=user_id).first()
+	if user is None:
+		return Response(status=status.HTTP_404_NOT_FOUND)
+	user_profile = UserProfileDto(user.first_name, user.last_name, user.email, user.favorites)
+	return Response(UserProfileSerializer(user_profile).data)
 
 
 

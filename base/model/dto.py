@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
+from base.models import *
+from base.serializers import *
 
 class LocationDto:
 	countries : []
@@ -60,3 +62,24 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['role'] = user.role
         # ...
         return token
+
+class UserProfileDto:
+	first_name : str
+	last_name : str
+	email : str
+	favorites : Property
+
+	def __init__(self, first_name, last_name, email, favorites):
+		self.first_name = first_name
+		self.last_name = last_name
+		self.email = email
+		self.favorites = favorites
+
+
+class UserProfileSerializer(serializers.Serializer):
+	first_name = serializers.CharField(max_length=100)
+	last_name = serializers.CharField(max_length=100)
+	email = serializers.CharField(max_length=100)
+	favorites = PropertySerializer(many=True)
+
+	
