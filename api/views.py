@@ -74,6 +74,8 @@ def login(request):
 
 @api_view(['GET'])
 def user_by_id(request, user_id):
+	if JWTAuthentication().authenticate(request, ['AGENT', 'CUSTOMER'], user_id) == False:
+		return Response(status=status.HTTP_401_UNAUTHORIZED)
 	user = User.objects.filter(id=user_id).first()
 	if user is None:
 		return Response(status=status.HTTP_404_NOT_FOUND)

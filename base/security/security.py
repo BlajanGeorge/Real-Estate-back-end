@@ -5,11 +5,11 @@ from base.models import *
 
 
 class JWTAuthentication:
-	def get_the_token_from_header(self, token, request_user_id):
+	def get_the_token_from_header(self, token):
 		token = token.replace('Bearer', '').replace(' ', '')
 		return token
 
-	def authenticate(self, request, role):
+	def authenticate(self, request, roles, request_user_id):
 		jwt_token = request.headers.get('Authorization')
 		if jwt_token is None:
 			return False
@@ -32,11 +32,11 @@ class JWTAuthentication:
 		if user is None:
 			return False
 
-		if request_user_id is not None:
-			if user_id != request_user_id:
+		if request_user_id is not None and user.role != 'AGENT':
+			if int(user_id) != int(request_user_id):
 				return False
 
-		if user.role != role:
+		if user.role not in roles:
 			return False
 
 		return True
