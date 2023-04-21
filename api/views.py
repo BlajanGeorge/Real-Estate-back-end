@@ -79,7 +79,16 @@ def user_by_id(request, user_id):
 	user = User.objects.filter(id=user_id).first()
 	if user is None:
 		return Response(status=status.HTTP_404_NOT_FOUND)
-	user_profile = UserProfileDto(user.first_name, user.last_name, user.email, user.favorites)
+
+	favorites = []
+
+	for fav in user.favorites.all():
+		photos = []
+		for photo in fav.propertyphoto_set.all():
+			photos.append(PropertyPhotoDto(photo.url))
+		favorites.append(FavoriteDto(fav.id, fav.country, fav.city, fav.address, fav.exchange, fav.price, fav.square_feet, fav.rooms, fav.type, fav.name, photos))
+
+	user_profile = UserProfileDto(user.first_name, user.last_name, user.email, favorites)
 	return Response(UserProfileSerializer(user_profile).data)
 
 @api_view(['PATCH'])
@@ -121,5 +130,25 @@ def user_by_id_password(request, user_id):
 		return Response(serializer.data)
 	
 	return Response(status=HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def user_by_id_favorites(request, user_id):
+	if JWTAuthentication().authenticate(request, ['AGENT', 'CUSTOMER'], user_id) == False:
+		return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+	user = User.objects.filter(id=user_id).first()
+	if user is None:
+		return Response(status=status.HTTP_404_NOT_FOUND)
+
+	favorites = []
+
+	for fav in user.favorites.all():
+		photos = []
+		for photo in fav.propertyphoto_set.all():
+			photos.append(PropertyPhotoDto(photo.url))
+		favorites.append(FavoriteDto(fav.id, fav.country, fav.city, fav.address, fav.exchange, fav.price, fav.square_feet, fav.rooms, fav.type, photos))
+
+	serializer = FavoriteSerializer(favorites, many=True)
+	return Response(serializer.data)
 
 

@@ -43,6 +43,7 @@ class PropertyType(models.TextChoices):
 	APARTMENT = 'Apartment'
 
 class Property(models.Model):
+	name = models.CharField(max_length=100, default=None)
 	country = models.CharField(max_length=100, choices = ValidCountry.choices)
 	city = models.CharField(max_length=100, choices = ValidCity.choices)
 	address = models.CharField(max_length=300, blank=False)
