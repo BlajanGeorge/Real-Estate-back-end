@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
-from django.db.models import Q
+from django.db.models import Q,F,ExpressionWrapper
 import sys
 sys.path.insert(0,"..")
 
@@ -15,6 +15,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from django.db import models
+import time
+import datetime
 
 @api_view(['GET'])
 def validLocations(request):
@@ -301,4 +304,42 @@ def property_by_id(request, property_id) :
 
 	return Response(serializer.data)
 
+@api_view(['GET', 'POST', 'DELETE'])
+def user_by_id_schedules(request, user_id):
+	if JWTAuthentication().authenticate(request, ['AGENT', 'CUSTOMER'], None) == False:
+		return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+	if request.method == 'POST':
+		property_id = request.GET.get('property_id')
+		date = request.data.get('date')
+
+		if property_id is None or date is None:
+			return Response(status=status.HTTP_400_BAD_REQUEST)
+
+		if current_milli_time() + 86400000 > int(date):
+			return Response("Schedule must be at least one day ahead", status=status.HTTP_400_BAD_REQUEST)
+
+		ocuppied = Schedule.objects.annotate(end_date=ExpressionWrapper(F('date') + 3600000, output_field=models.BigIntegerField())).filter(Q(property_id=property_id, date__lt=date, end_date__gt=date) | Q(date=date)).first()
+
+		if ocuppied is not None:
+			start_search_date = ocuppied.date
+			found = False
+
+			while found == False:
+				start_search_date += 3600000
+				test = Schedule.objects.annotate(end_date=ExpressionWrapper(F('date') + 3600000, output_field=models.BigIntegerField())).filter(Q(property_id=property_id, date__lt=start_search_date, end_date__gt=start_search_date) | Q(date=start_search_date)).first()
+				if test is None:
+					found = True
+
+			return Response('Another schedule is programmed in this interval, most appropiate time of the choosed one is {}'.format(datetime.datetime.fromtimestamp(( start_search_date + 10800000)/1000.0)), status=status.HTTP_400_BAD_REQUEST)
+
+		Schedule.objects.create(property_id=property_id, user_id=user_id, date=date)
+
+		return Response()
+
+
+	return Response()
+
+def current_milli_time():
+    return round(time.time() * 1000)
 
