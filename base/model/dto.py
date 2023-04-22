@@ -72,7 +72,7 @@ class PropertyPhotoDto:
 class PropertyPhotoSerializer(serializers.Serializer):
 	url = serializers.CharField(max_length=100)
 
-class FavoriteDto:
+class PropertyDto:
 	id : int
 	country : str
 	city : str
@@ -98,7 +98,7 @@ class FavoriteDto:
 		self.photos = photos
 		self.name = name
 
-class FavoriteSerializer(serializers.Serializer):
+class PropertySerializer(serializers.Serializer):
 	id = serializers.IntegerField()
 	country = serializers.CharField()
 	city = serializers.CharField()
@@ -115,7 +115,7 @@ class UserProfileDto:
 	first_name : str
 	last_name : str
 	email : str
-	favorites : FavoriteDto
+	favorites : PropertyDto
 
 	def __init__(self, first_name, last_name, email, favorites):
 		self.first_name = first_name
@@ -128,7 +128,7 @@ class UserProfileSerializer(serializers.Serializer):
 	first_name = serializers.CharField(max_length=100)
 	last_name = serializers.CharField(max_length=100)
 	email = serializers.CharField(max_length=100)
-	favorites = FavoriteSerializer(many=True)
+	favorites = PropertySerializer(many=True)
 
 
 

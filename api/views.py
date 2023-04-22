@@ -1,6 +1,7 @@
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
+from django.db.models import Q
 import sys
 sys.path.insert(0,"..")
 
@@ -86,7 +87,7 @@ def user_by_id(request, user_id):
 		photos = []
 		for photo in fav.propertyphoto_set.all():
 			photos.append(PropertyPhotoDto(photo.url))
-		favorites.append(FavoriteDto(fav.id, fav.country, fav.city, fav.address, fav.exchange, fav.price, fav.square_feet, fav.rooms, fav.type, fav.name, photos))
+		favorites.append(PropertyDto(fav.id, fav.country, fav.city, fav.address, fav.exchange, fav.price, fav.square_feet, fav.rooms, fav.type, fav.name, photos))
 
 	user_profile = UserProfileDto(user.first_name, user.last_name, user.email, favorites)
 	return Response(UserProfileSerializer(user_profile).data)
@@ -146,9 +147,93 @@ def user_by_id_favorites(request, user_id):
 		photos = []
 		for photo in fav.propertyphoto_set.all():
 			photos.append(PropertyPhotoDto(photo.url))
-		favorites.append(FavoriteDto(fav.id, fav.country, fav.city, fav.address, fav.exchange, fav.price, fav.square_feet, fav.rooms, fav.type, photos))
+		favorites.append(PropertyDto(fav.id, fav.country, fav.city, fav.address, fav.exchange, fav.price, fav.square_feet, fav.rooms, fav.type, photos))
 
-	serializer = FavoriteSerializer(favorites, many=True)
+	serializer = PropertySerializer(favorites, many=True)
+	return Response(serializer.data)
+
+
+@api_view(['GET'])
+def properties(request):
+	if JWTAuthentication().authenticate(request, ['AGENT', 'CUSTOMER'], None) == False:
+		return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+	properties = Property.objects.all()
+
+	properties_response = []
+
+	for property in properties:
+		photos = []
+		for photo in property.propertyphoto_set.all():
+			photos.append(PropertyPhotoDto(photo.url))
+		properties_response.append(PropertyDto(property.id, property.country, property.city, property.address, property.exchange, property.price, property.square_feet, property.rooms, property.type, property.name, photos))
+
+	serializer = PropertySerializer(properties_response, many=True)
+
+	return Response(serializer.data)
+
+@api_view(['GET'])
+def properties_with_filter(request):
+	if JWTAuthentication().authenticate(request, ['AGENT', 'CUSTOMER'], None) == False:
+		return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+	type = request.GET.get('type')
+	rooms = request.GET.get('rooms')
+	min_sq = request.GET.get('min_sq')
+	max_sq = request.GET.get('max_sq')
+	min_price = request.GET.get('min_price')
+	max_price = request.GET.get('max_price')
+
+	query = None
+
+	if type is not None:
+		query = Q(type=type)
+
+	if rooms is not None:
+		if query is None:
+			query = Q(rooms=rooms)
+		else:
+			query = query & Q(rooms=rooms)
+
+	if min_sq is not None:
+		if query is None:
+			query = Q(square_feet__gte=min_sq)
+		else:
+			query = query & Q(square_feet__gte=min_sq)
+
+	if max_sq is not None:
+		if query is None:
+			query = Q(square_feet__lte=max_sq)
+		else:
+			query = query & Q(square_feet__lte=max_sq)
+
+	if min_price is not None:
+		if query is None:
+			query = Q(price__gtee=min_price)
+		else:
+			query = query & Q(price__gtee=min_price)
+
+	if max_price is not None:
+		if query is None:
+			query = Q(price__lte=max_price)
+		else:
+			query = query & Q(price__lte=max_price)
+
+	if query is not None:
+		properties = Property.objects.filter(query)
+	else:
+		properties = Property.objects.all()
+
+	properties_response = []
+
+	for property in properties:
+		photos = []
+		for photo in property.propertyphoto_set.all():
+			photos.append(PropertyPhotoDto(photo.url))
+		properties_response.append(PropertyDto(property.id, property.country, property.city, property.address, property.exchange, property.price, property.square_feet, property.rooms, property.type, property.name, photos))
+
+	serializer = PropertySerializer(properties_response, many=True)
+
 	return Response(serializer.data)
 
 
