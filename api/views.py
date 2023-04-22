@@ -132,25 +132,59 @@ def user_by_id_password(request, user_id):
 	
 	return Response(status=HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['GET'])
+@api_view(['GET', 'POST', 'DELETE'])
 def user_by_id_favorites(request, user_id):
 	if JWTAuthentication().authenticate(request, ['AGENT', 'CUSTOMER'], user_id) == False:
 		return Response(status=status.HTTP_401_UNAUTHORIZED)
 
+
 	user = User.objects.filter(id=user_id).first()
+
 	if user is None:
 		return Response(status=status.HTTP_404_NOT_FOUND)
 
 	favorites = []
 
-	for fav in user.favorites.all():
+	if request.method == 'GET':
+		return Response(display_favorites(user.favorites.all()).data)
+
+	if request.method == 'DELETE':
+		prop_id = request.GET.get('property_id')
+
+		if prop_id is None:
+			return Response(status=status.HTTP_400_BAD_REQUEST)
+
+		user.favorites.through.objects.filter(property_id=prop_id).delete()
+		return Response(display_favorites(user.favorites.all()).data)
+
+	if request.method == 'POST':
+		prop_id = request.data.get('property_id')
+
+		if prop_id is None:
+			return Response(status=status.HTTP_400_BAD_REQUEST)
+
+		property = Property.objects.filter(id=prop_id).first()
+
+		if property is None:
+			return Response(status=status.HTTP_400_BAD_REQUEST)
+
+		user.favorites.add(property)
+		return Response(display_favorites(user.favorites.all()).data)
+
+
+	return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+def display_favorites(fav_db):
+	favorites = []
+	for fav in fav_db:
 		photos = []
 		for photo in fav.propertyphoto_set.all():
 			photos.append(PropertyPhotoDto(photo.url))
-		favorites.append(PropertyDto(fav.id, fav.country, fav.city, fav.address, fav.exchange, fav.price, fav.square_feet, fav.rooms, fav.type, photos))
+		favorites.append(PropertyDto(fav.id, fav.country, fav.city, fav.address, fav.exchange, fav.price, fav.square_feet, fav.rooms, fav.type, fav.name, photos))
 
 	serializer = PropertySerializer(favorites, many=True)
-	return Response(serializer.data)
+	return serializer
 
 
 @api_view(['GET'])
@@ -184,10 +218,17 @@ def properties_with_filter(request):
 	min_price = request.GET.get('min_price')
 	max_price = request.GET.get('max_price')
 
+	types = []
+
+	if type == 'All' :
+		types = ['House', 'Apartment']
+	else:
+		types.append(type)
+
 	query = None
 
 	if type is not None:
-		query = Q(type=type)
+		query = Q(type__in=types)
 
 	if rooms is not None:
 		if query is None:
@@ -209,9 +250,9 @@ def properties_with_filter(request):
 
 	if min_price is not None:
 		if query is None:
-			query = Q(price__gtee=min_price)
+			query = Q(price__gte=min_price)
 		else:
-			query = query & Q(price__gtee=min_price)
+			query = query & Q(price__gte=min_price)
 
 	if max_price is not None:
 		if query is None:
@@ -233,6 +274,30 @@ def properties_with_filter(request):
 		properties_response.append(PropertyDto(property.id, property.country, property.city, property.address, property.exchange, property.price, property.square_feet, property.rooms, property.type, property.name, photos))
 
 	serializer = PropertySerializer(properties_response, many=True)
+
+	return Response(serializer.data)
+
+@api_view(['GET'])
+def property_by_id(request, property_id) :
+	if JWTAuthentication().authenticate(request, ['AGENT', 'CUSTOMER'], None) == False:
+		return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+	if property_id is None:
+		return Response(status=status.HTTP_400_BAD_REQUEST)
+
+	property = Property.objects.filter(id=property_id).first()
+
+	if property is None:
+		return Response(status=status.HTTP_404_NOT_FOUND)
+
+	photos = []
+
+	for photo in property.propertyphoto_set.all():
+		photos.append(PropertyPhotoDto(photo.url))
+
+	property_response = PropertyDto(property.id, property.country, property.city, property.address, property.exchange, property.price, property.square_feet, property.rooms, property.type, property.name, photos)
+
+	serializer = PropertySerializer(property_response, many=False)
 
 	return Response(serializer.data)
 

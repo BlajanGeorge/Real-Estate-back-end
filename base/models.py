@@ -79,3 +79,11 @@ class User(models.Model):
 	class Meta:
 		db_table='user'
 
+class Schedule(models.Model):
+	user = models.ForeignKey(User, on_delete=models.CASCADE)
+	property = models.ForeignKey(Property, on_delete=models.CASCADE)
+	date = models.BigIntegerField()
+
+	class Meta:
+		db_table='schedule'
+
