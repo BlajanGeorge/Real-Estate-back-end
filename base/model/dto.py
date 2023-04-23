@@ -130,5 +130,26 @@ class UserProfileSerializer(serializers.Serializer):
 	email = serializers.CharField(max_length=100)
 	favorites = PropertySerializer(many=True)
 
+class ScheduleDto:
+	id : int
+	user_id : int
+	first_name : str
+	last_name : str
+	date : int
+
+	def __init__(self, id, user_id, first_name, last_name, date):
+		self.id = id
+		self.user_id = user_id
+		self.first_name = first_name
+		self.last_name = last_name
+		self.date = date
+
+class ScheduleSerializer(serializers.Serializer):
+	id = serializers.IntegerField()
+	user_id = serializers.IntegerField()
+	first_name = serializers.CharField()
+	last_name = serializers.CharField()
+	date = serializers.IntegerField()
+
 
 

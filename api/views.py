@@ -355,6 +355,12 @@ def property_by_id_schedules(request, property_id):
 
 	schedules = Schedule.objects.filter(property_id=property_id).all()
 
-	serializer = ScheduleSerializer(schedules, many=True)
+	schedules_resp = []
+
+	for schedule in schedules:
+		user = User.objects.filter(id=schedule.user.id).first()
+		schedules_resp.append(ScheduleDto(schedule.id, user.id, user.first_name, user.last_name, schedule.date))
+
+	serializer = ScheduleSerializer(schedules_resp, many=True)
 
 	return Response(serializer.data)
