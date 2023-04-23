@@ -306,7 +306,7 @@ def property_by_id(request, property_id) :
 
 @api_view(['GET', 'POST', 'DELETE'])
 def user_by_id_schedules(request, user_id):
-	if JWTAuthentication().authenticate(request, ['AGENT', 'CUSTOMER'], None) == False:
+	if JWTAuthentication().authenticate(request, ['CUSTOMER'], None) == False:
 		return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 	if request.method == 'POST':
@@ -346,7 +346,7 @@ def current_milli_time():
 
 @api_view(['GET'])
 def property_by_id_schedules(request, property_id):
-	if JWTAuthentication().authenticate(request, ['AGENT', 'CUSTOMER'], None) == False:
+	if JWTAuthentication().authenticate(request, ['AGENT'], None) == False:
 		return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 	if property_id is None:
