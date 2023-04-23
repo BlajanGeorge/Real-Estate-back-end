@@ -335,7 +335,7 @@ def user_by_id_schedules(request, user_id):
 
 		Schedule.objects.create(property_id=property_id, user_id=user_id, date=date)
 
-		return Response()
+		return Response('Schedule created with success')
 
 
 	return Response()
@@ -343,3 +343,18 @@ def user_by_id_schedules(request, user_id):
 def current_milli_time():
     return round(time.time() * 1000)
 
+
+@api_view(['GET'])
+def property_by_id_schedules(request, property_id):
+	if JWTAuthentication().authenticate(request, ['AGENT', 'CUSTOMER'], None) == False:
+		return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+	if property_id is None:
+		return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+	schedules = Schedule.objects.filter(property_id=property_id).all()
+
+	serializer = ScheduleSerializer(schedules, many=True)
+
+	return Response(serializer.data)
