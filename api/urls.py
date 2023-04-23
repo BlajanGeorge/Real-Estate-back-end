@@ -14,4 +14,5 @@ path('properties/filter', views.properties_with_filter),
 path('properties/<property_id>', views.property_by_id),
 path('users/<user_id>/schedules', views.user_by_id_schedules),
 path('properties/<property_id>/schedules', views.property_by_id_schedules),
+path('properties/<property_id>/schedules/count', views.property_by_id_schedules_count),
 ]

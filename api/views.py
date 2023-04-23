@@ -18,6 +18,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.db import models
 import time
 import datetime
+from datetime import datetime
 
 @api_view(['GET'])
 def validLocations(request):
@@ -280,11 +281,8 @@ def properties_with_filter(request):
 
 	return Response(serializer.data)
 
-@api_view(['GET'])
+@api_view(['GET', 'DELETE'])
 def property_by_id(request, property_id) :
-	if JWTAuthentication().authenticate(request, ['AGENT', 'CUSTOMER'], None) == False:
-		return Response(status=status.HTTP_401_UNAUTHORIZED)
-
 	if property_id is None:
 		return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -293,16 +291,30 @@ def property_by_id(request, property_id) :
 	if property is None:
 		return Response(status=status.HTTP_404_NOT_FOUND)
 
-	photos = []
+	if request.method == 'GET':
+		if JWTAuthentication().authenticate(request, ['AGENT', 'CUSTOMER'], None) == False:
+			return Response(status=status.HTTP_401_UNAUTHORIZED)
 
-	for photo in property.propertyphoto_set.all():
-		photos.append(PropertyPhotoDto(photo.url))
+		photos = []
 
-	property_response = PropertyDto(property.id, property.country, property.city, property.address, property.exchange, property.price, property.square_feet, property.rooms, property.type, property.name, photos)
+		for photo in property.propertyphoto_set.all():
+			photos.append(PropertyPhotoDto(photo.url))
 
-	serializer = PropertySerializer(property_response, many=False)
+		property_response = PropertyDto(property.id, property.country, property.city, property.address, property.exchange, property.price, property.square_feet, property.rooms, property.type, property.name, photos)
 
-	return Response(serializer.data)
+		serializer = PropertySerializer(property_response, many=False)
+
+		return Response(serializer.data)
+
+	if request.method == 'DELETE':
+		if JWTAuthentication().authenticate(request, ['AGENT'], None) == False:
+			return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+		Property.objects.filter(id=property_id).delete()
+
+		return Response()
+
+	return Response(status=HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET', 'POST', 'DELETE'])
 def user_by_id_schedules(request, user_id):
@@ -362,5 +374,44 @@ def property_by_id_schedules(request, property_id):
 		schedules_resp.append(ScheduleDto(schedule.id, user.id, user.first_name, user.last_name, schedule.date))
 
 	serializer = ScheduleSerializer(schedules_resp, many=True)
+
+	return Response(serializer.data)
+
+@api_view(['GET'])
+def property_by_id_schedules_count(request, property_id):
+	if JWTAuthentication().authenticate(request, ['AGENT'], None) == False:
+		return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+	if property_id is None:
+		return Response(status=status.HTTP_400_BAD_REQUEST)
+
+	start_time = request.GET.get('start_time')
+	end_time = request.GET.get('end_time')
+
+	if start_time is None or end_time is None:
+		return Response(status=status.HTTP_400_BAD_REQUEST)
+
+	schedules = Schedule.objects.filter(property_id=property_id, date__lte=end_time, date__gte=start_time).all()
+
+	schedules_dictionary = {}
+	counter = int(start_time)
+
+	while counter < int(end_time):
+		full_date = datetime.fromtimestamp(counter / 1000)
+		day_and_month = str(full_date.day) + "." + str(full_date.month)
+		schedules_dictionary[day_and_month] = 0
+		counter += 86400000
+
+	for schedule in schedules:
+		full_date = datetime.fromtimestamp(schedule.date / 1000)
+		day_and_month = str(full_date.day) + "." + str(full_date.month)
+		schedules_dictionary[day_and_month] = schedules_dictionary[day_and_month] + 1
+
+	response = []
+
+	for key in schedules_dictionary:
+		response.append(ScheduleCountDto(key, schedules_dictionary[key]))
+
+	serializer = ScheduleCountSerializer(response, many=True)
 
 	return Response(serializer.data)

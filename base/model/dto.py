@@ -152,4 +152,19 @@ class ScheduleSerializer(serializers.Serializer):
 	date = serializers.IntegerField()
 
 
+class ScheduleCountDto:
+	label : str
+	data: int
+
+	def __init__(self, label, data):
+		self.label = label
+		self.data = data
+
+class ScheduleCountSerializer(serializers.Serializer):
+	label = serializers.CharField()
+	data = serializers.IntegerField()
+
+
+
+
 
