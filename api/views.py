@@ -281,7 +281,7 @@ def properties_with_filter(request):
 
 	return Response(serializer.data)
 
-@api_view(['GET', 'DELETE'])
+@api_view(['GET', 'DELETE', 'PUT'])
 def property_by_id(request, property_id) :
 	if property_id is None:
 		return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -311,6 +311,36 @@ def property_by_id(request, property_id) :
 			return Response(status=status.HTTP_401_UNAUTHORIZED)
 
 		Property.objects.filter(id=property_id).delete()
+
+		return Response()
+
+	if request.method == 'PUT':
+		if JWTAuthentication().authenticate(request, ['AGENT'], None) == False:
+			return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+		prop = Property.objects.filter(id=property_id).first()
+
+		if prop is None:
+			return Response(status=status.HTTP_404_NOT_FOUND)
+
+		name = request.data.get('name')
+		exchange = request.data.get('exchange')
+		rooms = request.data.get('rooms')
+		price = request.data.get('price')
+		type = request.data.get('type')
+		sq = request.data.get('square_feet')
+
+		if name is None or exchange is None or rooms is None or price is None or type is None or sq is None:
+			return Response(status=status.HTTP_400_BAD_REQUEST)
+
+		prop.name = name
+		prop.exchange = exchange
+		prop.rooms = rooms
+		prop.price = price
+		prop.type = type
+		prop.square_feet = sq
+
+		prop.save()
 
 		return Response()
 
