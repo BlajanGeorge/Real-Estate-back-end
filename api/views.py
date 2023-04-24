@@ -19,6 +19,7 @@ from django.db import models
 import time
 import datetime
 from datetime import datetime
+from django.core.files.storage import FileSystemStorage
 
 @api_view(['GET'])
 def validLocations(request):
@@ -191,8 +192,34 @@ def display_favorites(fav_db):
 	return serializer
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 def properties(request):
+	if request.method == 'POST':
+		if JWTAuthentication().authenticate(request, ['AGENT'], None) == False:
+			return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+		prop = Property.objects.create(
+			name=request.data.get('name'),
+			country=request.data.get('country'),
+			city=request.data.get('city'),
+			address=request.data.get('address'),
+			exchange=request.data.get('exchange'),
+			price=request.data.get('price'),
+			square_feet=request.data.get('square_feet'),
+			rooms=request.data.get('rooms'),
+			type=request.data.get('type'))
+
+		photos = request.data.get('photos')
+
+		for photo in photos:
+			with open("/Users/george/Work/UTCN/real-estate-front-end/src/assets/" + photo.get('name'), 'wb') as f:
+				f.write(bytes(photo.get('content').values()))
+			PropertyPhoto.objects.create(
+				url="src/assets/" + photo.get('name'),
+				property=prop)
+
+		return Response()
+
 	if JWTAuthentication().authenticate(request, ['AGENT', 'CUSTOMER'], None) == False:
 		return Response(status=status.HTTP_401_UNAUTHORIZED)
 
